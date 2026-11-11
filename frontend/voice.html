@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medicall Voice Assistant — Live AI Receptionist</title>
+  <meta name="description" content="Talk to Medicall, your hospital's AI receptionist. Ask about appointments, departments, and more." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            outfit:  ['Outfit', 'sans-serif'],
+            jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* ── Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #f0f7ff;
+      color: #1e293b;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    h1,h2,h3,h4 { font-family: 'Outfit', sans-serif; }
+
+    /* ── Fixed background ─────────────────────────── */
+    #bgCanvas {
+      position: fixed; top:0; left:0;
+      width:100vw; height:100vh;
+      pointer-events:none; z-index:0;
+    }
+
+    .glow-wrap {
+      position: fixed; inset:0;
+      pointer-events:none; z-index:0; overflow:hidden;
+    }
+    .orb-a {
+      position:absolute; top:5%; left:8%;
+      width:420px; height:420px;
+      background: radial-gradient(circle, rgba(29,104,216,0.14) 0%, transparent 70%);
+      border-radius:50%; filter:blur(40px);
+      animation: floatOrb 18s ease-in-out infinite alternate;
+    }
+    .orb-b {
+      position:absolute; bottom:8%; right:6%;
+      width:500px; height:500px;
+      background: radial-gradient(circle, rgba(13,148,136,0.16) 0%, transparent 70%);
+      border-radius:50%; filter:blur(45px);
+      animation: floatOrb 22s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes floatOrb {
+      0%   { transform: translate(0,0) scale(1); }
+      50%  { transform: translate(40px,-25px) scale(1.06); }
+      100% { transform: translate(-25px,40px) scale(0.95); }
+    }
+
+    /* ── Main layout ──────────────────────────────── */
+    .page-wrap {
+      position: relative; z-index:10;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    .site-header {
+      background: rgba(240,247,255,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(226,232,240,0.6);
+      position: sticky; top:0; z-index:50;
+    }
+
+    /* ── Voice Phone Card ─────────────────────────── */
+    .phone-card {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(226,232,240,0.9);
+      border-radius: 2rem;
+      box-shadow: 0 24px 60px -10px rgba(9,30,54,0.14);
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* ── Orb Button ──────────────────────────────── */
+    .voice-orb-wrap {
+      width: 140px; height: 140px;
+      margin: 0 auto;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .voice-orb {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d68d8 0%, #0d9488 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; color: white;
+      box-shadow: 0 12px 40px -6px rgba(29,104,216,0.45);
+      transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+      position: relative; z-index:2;
+    }
+
+    .voice-orb:hover { transform: scale(1.06); box-shadow: 0 18px 50px -6px rgba(29,104,216,0.55); }
+
+    .voice-orb.listening {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      box-shadow: 0 12px 40px -6px rgba(220,38,38,0.45);
+      animation: orbPulse 1.4s ease-in-out infinite;
+    }
+
+    .voice-orb.speaking {
+      background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+      box-shadow: 0 12px 40px -6px rgba(13,148,136,0.5);
+      animation: orbPulse 1s ease-in-out infinite;
+    }
+
+    .voice-orb.thinking {
+      background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+      box-shadow: 0 12px 40px -6px rgba(124,58,237,0.45);
+      animation: orbSpin 2s linear infinite;
+    }
+
+    @keyframes orbPulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.08); }
+    }
+    @keyframes orbSpin {
+      0%   { box-shadow: 0 12px 40px -6px rgba(124,58,237,0.6),  2px 0 20px rgba(99,102,241,0.4); }
+      50%  { box-shadow: 0 12px 40px -6px rgba(124,58,237,0.3), -2px 0 20px rgba(99,102,241,0.6); }
+      100% { box-shadow: 0 12px 40px -6px rgba(124,58,237,0.6),  2px 0 20px rgba(99,102,241,0.4); }
+    }
+
+    /* Ripple rings */
+    .ripple-ring {
+      position: absolute; inset:0;
+      border-radius:50%;
+      border: 2px solid rgba(29,104,216,0.35);
+      animation: rippleOut 2s ease-out infinite;
+    }
+    .ripple-ring:nth-child(2) { animation-delay: 0.7s; }
+    .ripple-ring:nth-child(3) { animation-delay: 1.4s; }
+
+    @keyframes rippleOut {
+      0%   { transform: scale(1);   opacity: 0.8; }
+      100% { transform: scale(2.1); opacity: 0; }
+    }
+
+    .ripple-ring.red   { border-color: rgba(220,38,38,0.35); }
+    .ripple-ring.teal  { border-color: rgba(13,148,136,0.35); }
+    .ripple-ring.indigo{ border-color: rgba(99,102,241,0.35); }
+
+    /* ── Waveform bars ─────────────────────────────── */
+    .wavebars {
+      display: flex; align-items: center; justify-content: center;
+      gap: 3px; height: 36px;
+    }
+
+    .wb {
+      width: 3.5px;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, #1d68d8, #0d9488);
+      transform-origin: bottom;
+      animation: wbAnim 1.1s ease-in-out infinite alternate;
+    }
+    .wb:nth-child(1)  { height: 12px; animation-delay: 0.0s; }
+    .wb:nth-child(2)  { height: 22px; animation-delay: 0.1s; }
+    .wb:nth-child(3)  { height: 32px; animation-delay: 0.2s; }
+    .wb:nth-child(4)  { height: 20px; animation-delay: 0.15s; }
+    .wb:nth-child(5)  { height: 36px; animation-delay: 0.05s; }
+    .wb:nth-child(6)  { height: 28px; animation-delay: 0.25s; }
+    .wb:nth-child(7)  { height: 16px; animation-delay: 0.3s; }
+    .wb:nth-child(8)  { height: 24px; animation-delay: 0.12s; }
+    .wb:nth-child(9)  { height: 34px; animation-delay: 0.18s; }
+    .wb:nth-child(10) { height: 14px; animation-delay: 0.08s; }
+
+    @keyframes wbAnim {
+      0%   { transform: scaleY(0.2); opacity: 0.35; }
+      100% { transform: scaleY(1);   opacity: 1; }
+    }
+
+    .wb.red   { background: linear-gradient(180deg, #ef4444, #dc2626); }
+    .wb.teal  { background: linear-gradient(180deg, #0d9488, #06b6d4); }
+    .wb.still { animation: none; transform: scaleY(0.25); opacity: 0.3; }
+
+    /* ── Chat transcript ──────────────────────────── */
+    .transcript-box {
+      height: 260px;
+      overflow-y: auto;
+      padding: 0.875rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+      scroll-behavior: smooth;
+    }
+
+    .transcript-box::-webkit-scrollbar { width: 4px; }
+    .transcript-box::-webkit-scrollbar-track { background: transparent; }
+    .transcript-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+
+    .msg-row { display:flex; gap:0.5rem; align-items:flex-start; animation: msgIn 0.35s ease; }
+    .msg-row.ai { flex-direction: row; }
+    .msg-row.user { flex-direction: row-reverse; }
+
+    @keyframes msgIn {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .msg-avatar {
+      width:28px; height:28px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.65rem; flex-shrink:0;
+    }
+    .msg-avatar.ai   { background: linear-gradient(135deg,#1d68d8,#0d9488); color:white; }
+    .msg-avatar.user { background: #e2e8f0; color:#64748b; }
+
+    .msg-bubble {
+      max-width: 82%; font-size:0.8rem;
+      line-height:1.55; padding:0.6rem 0.875rem; border-radius:1rem;
+    }
+    .msg-row.ai   .msg-bubble { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; border-radius:1rem 1rem 1rem 4px; }
+    .msg-row.user .msg-bubble { background:#1e293b; color:white; border-radius:1rem 1rem 4px 1rem; }
+
+    .typing-dots span {
+      display:inline-block; width:6px; height:6px; border-radius:50%;
+      background:#1d68d8; margin:0 1.5px;
+      animation: dot-bounce 1.2s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay:.2s; }
+    .typing-dots span:nth-child(3) { animation-delay:.4s; }
+    @keyframes dot-bounce {
+      0%,60%,100% { transform:translateY(0); }
+      30%         { transform:translateY(-5px); }
+    }
+
+    /* ── API key panel ─────────────────────────────── */
+    .key-panel {
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+      border-radius:1rem;
+      padding:1rem;
+      font-size:0.8rem;
+    }
+
+    .key-input {
+      width:100%;
+      padding:0.625rem 0.875rem;
+      border:1.5px solid #e2e8f0;
+      border-radius:0.75rem;
+      font-size:0.8rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      outline:none;
+      transition: border-color 0.2s;
+      background:#f8fafc;
+    }
+    .key-input:focus { border-color:#1d68d8; background:white; box-shadow:0 0 0 3px rgba(29,104,216,0.1); }
+
+    /* ── Status chip ──────────────────────────────── */
+    .status-chip {
+      display:inline-flex; align-items:center; gap:0.4rem;
+      padding:0.3rem 0.75rem; border-radius:9999px;
+      font-size:0.7rem; font-weight:600;
+      transition: all 0.3s ease;
+    }
+
+    .chip-idle     { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+    .chip-listen   { background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; }
+    .chip-think    { background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; }
+    .chip-speak    { background:#ccfbf1; color:#0d9488; border:1px solid #5eead4; }
+    .chip-error    { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
+
+    /* ── Buttons ──────────────────────────────────── */
+    .btn-primary {
+      display:flex; align-items:center; justify-content:center; gap:0.5rem;
+      padding:0.75rem 1.5rem; border-radius:1rem;
+      font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:0.875rem;
+      color:white; background:linear-gradient(135deg,#1d68d8,#0d9488);
+      box-shadow:0 4px 14px rgba(29,104,216,0.35);
+      transition:all 0.25s ease; cursor:pointer; border:none; width:100%;
+    }
+    .btn-primary:hover { opacity:0.9; transform:translateY(-1px); box-shadow:0 6px 20px rgba(29,104,216,0.4); }
+    .btn-primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+    .btn-danger {
+      display:flex; align-items:center; justify-content:center; gap:0.5rem;
+      padding:0.75rem 1.5rem; border-radius:1rem;
+      font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:0.875rem;
+      color:white; background:linear-gradient(135deg,#dc2626,#b91c1c);
+      box-shadow:0 4px 14px rgba(220,38,38,0.35);
+      transition:all 0.25s ease; cursor:pointer; border:none; width:100%;
+    }
+    .btn-danger:hover { opacity:0.9; transform:translateY(-1px); }
+
+    .btn-ghost {
+      display:flex; align-items:center; justify-content:center; gap:0.5rem;
+      padding:0.625rem 1rem; border-radius:0.875rem;
+      font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:0.8rem;
+      color:#475569; background:#f1f5f9; border:1px solid #e2e8f0;
+      transition:all 0.2s; cursor:pointer;
+    }
+    .btn-ghost:hover { background:#e2e8f0; color:#1e293b; }
+
+    /* ── Permissions banner ───────────────────────── */
+    .perm-banner {
+      background:#dbeafe; border:1.5px solid #bfdbfe;
+      border-radius:1rem; padding:0.875rem 1rem;
+      display:flex; align-items:flex-start; gap:0.625rem;
+      font-size:0.75rem; color:#1e40af;
+    }
+
+    /* ── Fade in ──────────────────────────────────── */
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background -->
+  <div class="glow-wrap">
+    <div class="orb-a"></div>
+    <div class="orb-b"></div>
+  </div>
+  <canvas id="bgCanvas"></canvas>
+
+  <!-- Page -->
+  <div class="page-wrap">
+
+    <!-- Header -->
+    <header class="site-header">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2.5">
+          <img src="assets/medicall-logo.jpg" alt="Medicall" class="h-8 w-auto rounded-lg" />
+          <span class="font-outfit font-bold text-lg text-[#091e36] hidden sm:block">Medicall</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="index.html" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">
+            <i class="fa-solid fa-arrow-left text-xs"></i> Back to Website
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
+      <div class="w-full max-w-xl fade-in">
+
+        <!-- Title -->
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#dbeafe] text-[#1d68d8] text-xs font-semibold mb-3 border border-[#bfdbfe]">
+            <span class="relative flex h-2 w-2">
+              <span id="liveDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1d68d8] opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-[#1d68d8]"></span>
+            </span>
+            Live AI Voice Receptionist
+          </div>
+          <h1 class="font-outfit font-extrabold text-2xl sm:text-3xl text-[#091e36] mb-1">Talk to Medicall</h1>
+          <p class="text-slate-500 text-sm">Speak naturally — your AI receptionist will respond with voice.</p>
+        </div>
+
+        <!-- API Key Panel -->
+        <div id="keyPanel" class="key-panel mb-5">
+          <div class="flex items-start gap-2 mb-3">
+            <i class="fa-solid fa-key text-orange-400 mt-0.5 flex-shrink-0"></i>
+            <div>
+              <p class="font-semibold text-orange-800 mb-0.5">OpenAI API Key Required</p>
+              <p class="text-orange-600 text-xs">Your key is used only in your browser and never stored or sent to any server other than OpenAI.</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <input type="password" id="apiKeyInput" class="key-input flex-1"
+              placeholder="sk-proj-..." autocomplete="off" spellcheck="false" />
+            <button onclick="saveApiKey()" class="flex-shrink-0 px-3 py-2 rounded-xl bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition">
+              Save
+            </button>
+          </div>
+          <p class="text-orange-500 text-xs mt-2">
+            <i class="fa-solid fa-circle-info mr-1"></i>
+            Don't have a key? <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" class="underline font-semibold">Get one at platform.openai.com</a>
+          </p>
+        </div>
+
+        <!-- Microphone Permission Banner -->
+        <div id="permBanner" class="perm-banner mb-5 hidden">
+          <i class="fa-solid fa-microphone-slash mt-0.5 flex-shrink-0"></i>
+          <div>
+            <p class="font-semibold">Microphone access needed</p>
+            <p class="opacity-80">Click the button below and allow microphone access in your browser when prompted.</p>
+          </div>
+        </div>
+
+        <!-- Voice Phone Card -->
+        <div class="phone-card">
+
+          <!-- Status -->
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1d68d8] to-[#0d9488] flex items-center justify-center">
+                <i class="fa-solid fa-robot text-white text-sm"></i>
+              </div>
+              <div>
+                <p class="font-outfit font-semibold text-[#091e36] text-sm leading-tight">Medicall AI</p>
+                <p class="text-xs text-slate-400">Hospital Receptionist</p>
+              </div>
+            </div>
+            <div id="statusChip" class="status-chip chip-idle">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block"></span>
+              <span id="statusText">Ready</span>
+            </div>
+          </div>
+
+          <!-- Voice Orb -->
+          <div class="voice-orb-wrap mb-5" id="orbWrap" onclick="handleOrbClick()">
+            <div class="ripple-ring" id="ring1"></div>
+            <div class="ripple-ring" id="ring2"></div>
+            <div class="ripple-ring" id="ring3"></div>
+            <div class="voice-orb" id="voiceOrb">
+              <i class="fa-solid fa-microphone" id="orbIcon"></i>
+            </div>
+          </div>
+
+          <!-- Waveform -->
+          <div class="wavebars mb-4" id="wavebars">
+            <div class="wb still"></div><div class="wb still"></div><div class="wb still"></div>
+            <div class="wb still"></div><div class="wb still"></div><div class="wb still"></div>
+            <div class="wb still"></div><div class="wb still"></div><div class="wb still"></div>
+            <div class="wb still"></div>
+          </div>
+
+          <!-- Orb Instruction -->
+          <p id="orbHint" class="text-center text-xs text-slate-400 mb-4">Tap the orb to start speaking</p>
+
+          <!-- Transcript -->
+          <div class="transcript-box" id="transcriptBox">
+            <div class="msg-row ai">
+              <div class="msg-avatar ai"><i class="fa-solid fa-robot"></i></div>
+              <div class="msg-bubble">
+                Hello! I'm Medicall, your hospital's AI receptionist. How can I help you today? You can ask me about appointments, departments, visiting hours, or anything else.
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="flex gap-2 mt-4" id="callControls">
+            <button id="mainBtn" class="btn-primary" onclick="handleOrbClick()">
+              <i class="fa-solid fa-microphone" id="mainBtnIcon"></i>
+              <span id="mainBtnText">Start Speaking</span>
+            </button>
+          </div>
+
+          <div class="flex justify-between items-center mt-3">
+            <button class="btn-ghost text-xs px-3 py-1.5 rounded-lg" onclick="clearConversation()">
+              <i class="fa-solid fa-rotate-left text-xs"></i> New Call
+            </button>
+            <button id="stopSpeakBtn" class="btn-ghost text-xs px-3 py-1.5 rounded-lg hidden" onclick="stopSpeaking()">
+              <i class="fa-solid fa-stop text-xs"></i> Stop Speaking
+            </button>
+            <div class="flex items-center gap-1.5 text-xs text-slate-400">
+              <i class="fa-solid fa-shield-halved text-[#0d9488]"></i>
+              <span>Private · In-browser only</span>
+            </div>
+          </div>
+
+        </div><!-- end phone-card -->
+
+        <!-- Voice selector -->
+        <div class="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500">
+          <i class="fa-solid fa-sliders"></i>
+          <label for="voiceSelect" class="font-medium">AI Voice:</label>
+          <select id="voiceSelect" class="text-xs rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-600 outline-none cursor-pointer">
+            <option value="">Loading voices…</option>
+          </select>
+          <label for="speedRange" class="font-medium">Speed:</label>
+          <input type="range" id="speedRange" min="0.7" max="1.4" step="0.05" value="1.0" class="w-20 cursor-pointer" />
+          <span id="speedVal" class="w-6 text-center">1.0</span>
+        </div>
+
+        <!-- Info strip -->
+        <div class="mt-5 grid grid-cols-3 gap-3 text-center text-xs text-slate-500">
+          <div class="bg-white/70 border border-slate-200 rounded-xl p-2.5">
+            <i class="fa-solid fa-microphone text-[#1d68d8] block mb-1"></i>
+            <span class="font-medium">You speak</span>
+          </div>
+          <div class="bg-white/70 border border-slate-200 rounded-xl p-2.5">
+            <i class="fa-solid fa-robot text-purple-500 block mb-1"></i>
+            <span class="font-medium">GPT-4o thinks</span>
+          </div>
+          <div class="bg-white/70 border border-slate-200 rounded-xl p-2.5">
+            <i class="fa-solid fa-volume-high text-[#0d9488] block mb-1"></i>
+            <span class="font-medium">AI replies</span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-slate-400 py-4">
+      © 2026 Medicall · AI Receptionist for Healthcare
+    </footer>
+
+  </div><!-- end page-wrap -->
+
+  <script>
+  /**
+   * Medicall Voice Assistant — Main Script
+   * Stack: Web Speech API (STT) + OpenAI GPT-4o (AI) + Web Speech Synthesis (TTS)
+   */
+
+  /* ── State ─────────────────────────────────────── */
+  const state = {
+    apiKey: sessionStorage.getItem('medicall_api_key') || '',
+    phase: 'idle',          // idle | listening | thinking | speaking
+    recognition: null,
+    synthesis: window.speechSynthesis,
+    currentUtterance: null,
+    voices: [],
+    conversation: [
+      {
+        role: 'system',
+        content: `You are Medicall — a professional, warm, and helpful AI receptionist for a hospital.
+Your role is to assist patients over a voice call. Keep responses brief (2-4 sentences max) since they will be spoken aloud.
+Be conversational, empathetic, and clear. You can help with:
+- Appointment inquiries and scheduling requests
+- Department and ward information
+- Visiting hours and hospital policies
+- Routing patients to the right department
+- Answering common healthcare questions
+When a question is beyond your knowledge, offer to connect the patient with a human staff member.
+Always end with a short, friendly closing line or a follow-up question.
+Do NOT use markdown, bullet points, or any formatting. Speak in plain sentences only.`
+      },
+      {
+        role: 'assistant',
+        content: "Hello! I'm Medicall, your hospital's AI receptionist. How can I help you today? You can ask me about appointments, departments, visiting hours, or anything else."
+      }
+    ]
+  };
+
+  /* ── Canvas Background ─────────────────────────── */
+  (function() {
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, pts = [], crosses = [], pulses = [];
+    function resize() {
+      W = canvas.width = innerWidth;
+      H = canvas.height = innerHeight;
+      pts = []; crosses = []; pulses = [];
+      const n = Math.floor(Math.min(W, 1400) / 35);
+      for (let i = 0; i < n; i++) pts.push({
+        x: Math.random()*W, y: Math.random()*H,
+        vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45,
+        r:Math.random()*2+1,
+        col:Math.random()>.5?'rgba(29,104,216,':'rgba(13,148,136,',
+        a:Math.random()*.35+.18
+      });
+      for (let i = 0; i < 12; i++) crosses.push({
+        x:Math.random()*W, y:Math.random()*H,
+        sz:Math.random()*9+7, vy:-(Math.random()*.3+.15),
+        vx:(Math.random()-.5)*.09, rot:Math.random()*Math.PI,
+        rs:(Math.random()-.5)*.007, a:Math.random()*.25+.15,
+        col:Math.random()>.4?'#0d9488':'#0284c7'
+      });
+      pulses.push({x:0, spd:2.5, y:H*.36, col:'rgba(14,165,233,0.4)'});
+      pulses.push({x:-W*.5, spd:2.9, y:H*.82, col:'rgba(16,185,129,0.38)'});
+    }
+    window.addEventListener('resize', resize); resize();
+    (function animate() {
+      ctx.clearRect(0,0,W,H);
+      pulses.forEach(p => {
+        p.x += p.spd; if(p.x > W+120) p.x = -150;
+        ctx.beginPath(); ctx.strokeStyle = p.col; ctx.lineWidth = 1.8;
+        for(let x=0;x<W;x+=6){
+          let dy=0, d=Math.abs(x-p.x);
+          if(d<100){if(d<15)dy=-Math.sin(d/15*Math.PI)*32;else if(d<32)dy=Math.sin((d-15)/17*Math.PI)*12;else dy=-Math.sin((d-32)/68*Math.PI)*6;}
+          x===0?ctx.moveTo(x,p.y+dy):ctx.lineTo(x,p.y+dy);
+        }
+        ctx.stroke();
+        ctx.fillStyle=p.col; ctx.shadowColor=p.col; ctx.shadowBlur=8;
+        ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+      });
+      crosses.forEach(c=>{
+        c.y+=c.vy; c.x+=c.vx; c.rot+=c.rs;
+        if(c.y<-40){c.y=H+40;c.x=Math.random()*W;}
+        ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.rot); ctx.globalAlpha=c.a;
+        ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(0,0,c.sz*1.3,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle=c.col; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(-c.sz,0); ctx.lineTo(c.sz,0); ctx.moveTo(0,-c.sz); ctx.lineTo(0,c.sz); ctx.stroke();
+        ctx.restore();
+      });
+      pts.forEach((p,i)=>{
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+        ctx.fillStyle=`${p.col}${p.a})`; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+        for(let j=i+1;j<pts.length;j++){
+          const q=pts[j], d=Math.hypot(p.x-q.x,p.y-q.y);
+          if(d<120){ctx.strokeStyle=`rgba(14,165,233,${(1-d/120)*.22})`; ctx.lineWidth=.8; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();}
+        }
+      });
+      requestAnimationFrame(animate);
+    })();
+  })();
+
+  /* ── API Key ───────────────────────────────────── */
+  function saveApiKey() {
+    const v = document.getElementById('apiKeyInput').value.trim();
+    if (!v.startsWith('sk-')) { alert('Please enter a valid OpenAI API key (starts with sk-)'); return; }
+    state.apiKey = v;
+    sessionStorage.setItem('medicall_api_key', v);
+    document.getElementById('keyPanel').innerHTML = `
+      <div class="flex items-center gap-2 text-green-700">
+        <i class="fa-solid fa-circle-check text-green-500"></i>
+        <p class="font-semibold text-sm">API key saved for this session.</p>
+        <button onclick="resetApiKey()" class="ml-auto text-xs underline text-slate-400 hover:text-slate-600">Change</button>
+      </div>`;
+  }
+
+  function resetApiKey() {
+    state.apiKey = '';
+    sessionStorage.removeItem('medicall_api_key');
+    location.reload();
+  }
+
+  // Pre-fill if already saved
+  if (state.apiKey) {
+    document.getElementById('apiKeyInput').value = state.apiKey;
+    saveApiKey();
+  }
+
+  /* ── Voice (TTS) setup ─────────────────────────── */
+  const voiceSelect = document.getElementById('voiceSelect');
+  const speedRange  = document.getElementById('speedRange');
+  const speedVal    = document.getElementById('speedVal');
+
+  speedRange.addEventListener('input', () => { speedVal.textContent = parseFloat(speedRange.value).toFixed(2); });
+
+  function loadVoices() {
+    state.voices = speechSynthesis.getVoices();
+    voiceSelect.innerHTML = '';
+    const preferred = ['Google UK English Female','Google US English','Samantha','Karen','Moira'];
+    let preferredVoice = null;
+    state.voices.forEach((v, i) => {
+      if (v.lang.startsWith('en')) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${v.name} (${v.lang})`;
+        voiceSelect.appendChild(opt);
+        if (!preferredVoice && preferred.some(p => v.name.includes(p))) {
+          preferredVoice = i;
+        }
+      }
+    });
+    if (preferredVoice !== null) voiceSelect.value = preferredVoice;
+  }
+  speechSynthesis.addEventListener('voiceschanged', loadVoices);
+  loadVoices();
+  setTimeout(loadVoices, 800);
+
+  /* ── Speech Recognition setup ─────────────────── */
+  function setupRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setStatus('error', 'Browser not supported');
+      showBanner('Your browser does not support speech recognition. Please use Chrome or Edge.');
+      return null;
+    }
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.continuous = false;
+    return rec;
+  }
+
+  /* ── Phase Management ─────────────────────────── */
+  function setPhase(phase) {
+    state.phase = phase;
+    const orb   = document.getElementById('voiceOrb');
+    const icon  = document.getElementById('orbIcon');
+    const hint  = document.getElementById('orbHint');
+    const btn   = document.getElementById('mainBtn');
+    const btnI  = document.getElementById('mainBtnIcon');
+    const btnT  = document.getElementById('mainBtnText');
+    const stopB = document.getElementById('stopSpeakBtn');
+    const rings = [document.getElementById('ring1'), document.getElementById('ring2'), document.getElementById('ring3')];
+
+    // Reset ring colours
+    rings.forEach(r => { r.className = 'ripple-ring'; });
+
+    orb.className = 'voice-orb';
+    stopB.classList.add('hidden');
+
+    switch(phase) {
+      case 'idle':
+        setStatus('idle', 'Ready');
+        icon.className = 'fa-solid fa-microphone';
+        hint.textContent = 'Tap the orb to start speaking';
+        btn.className = 'btn-primary'; btnI.className = 'fa-solid fa-microphone'; btnT.textContent = 'Start Speaking';
+        setWavebars('still');
+        break;
+      case 'listening':
+        orb.classList.add('listening');
+        rings.forEach(r => r.classList.add('red'));
+        setStatus('listen', 'Listening…');
+        icon.className = 'fa-solid fa-microphone-lines';
+        hint.textContent = 'Speak now… tap to stop';
+        btn.className = 'btn-danger'; btnI.className = 'fa-solid fa-stop'; btnT.textContent = 'Stop Listening';
+        setWavebars('red');
+        break;
+      case 'thinking':
+        orb.classList.add('thinking');
+        rings.forEach(r => r.classList.add('indigo'));
+        setStatus('think', 'Thinking…');
+        icon.className = 'fa-solid fa-brain';
+        hint.textContent = 'Medicall is thinking…';
+        btn.disabled = true; btnI.className = 'fa-solid fa-circle-notch fa-spin'; btnT.textContent = 'Processing…';
+        setWavebars('still');
+        break;
+      case 'speaking':
+        orb.classList.add('speaking');
+        rings.forEach(r => r.classList.add('teal'));
+        setStatus('speak', 'Speaking…');
+        icon.className = 'fa-solid fa-volume-high';
+        hint.textContent = 'AI is speaking — tap orb to interrupt';
+        btn.disabled = false; btn.className = 'btn-primary'; btnI.className = 'fa-solid fa-microphone'; btnT.textContent = 'Speak Again';
+        stopB.classList.remove('hidden');
+        setWavebars('teal');
+        break;
+    }
+  }
+
+  function setWavebars(mode) {
+    document.querySelectorAll('.wb').forEach(b => {
+      b.className = 'wb';
+      if (mode === 'still') b.classList.add('still');
+      else if (mode === 'red')   b.classList.add('red');
+      else if (mode === 'teal')  b.classList.add('teal');
+    });
+  }
+
+  function setStatus(type, text) {
+    const chip = document.getElementById('statusChip');
+    const txt  = document.getElementById('statusText');
+    chip.className = `status-chip chip-${type}`;
+    const dotColor = { idle:'#94a3b8', listen:'#dc2626', think:'#7c3aed', speak:'#0d9488', error:'#f59e0b' };
+    chip.querySelector('span').style.background = dotColor[type] || '#94a3b8';
+    txt.textContent = text;
+  }
+
+  function showBanner(msg) {
+    const b = document.getElementById('permBanner');
+    b.classList.remove('hidden');
+    b.querySelector('p:last-child').textContent = msg;
+  }
+
+  /* ── Transcript ────────────────────────────────── */
+  function addMessage(role, text) {
+    const box = document.getElementById('transcriptBox');
+    // Remove typing indicator if present
+    const typing = box.querySelector('.typing-indicator');
+    if (typing) box.removeChild(typing);
+
+    const div = document.createElement('div');
+    div.className = `msg-row ${role === 'assistant' ? 'ai' : 'user'}`;
+    if (role === 'assistant') {
+      div.innerHTML = `
+        <div class="msg-avatar ai"><i class="fa-solid fa-robot"></i></div>
+        <div class="msg-bubble">${text}</div>`;
+    } else {
+      div.innerHTML = `
+        <div class="msg-avatar user"><i class="fa-solid fa-user"></i></div>
+        <div class="msg-bubble">${text}</div>`;
+    }
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function showTypingIndicator() {
+    const box = document.getElementById('transcriptBox');
+    const div = document.createElement('div');
+    div.className = 'msg-row ai typing-indicator';
+    div.innerHTML = `
+      <div class="msg-avatar ai"><i class="fa-solid fa-robot"></i></div>
+      <div class="msg-bubble">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function addInterimText(text) {
+    const box = document.getElementById('transcriptBox');
+    let interim = box.querySelector('.interim-msg');
+    if (!interim) {
+      interim = document.createElement('div');
+      interim.className = 'msg-row user interim-msg';
+      interim.innerHTML = `
+        <div class="msg-avatar user"><i class="fa-solid fa-user"></i></div>
+        <div class="msg-bubble" style="opacity:0.6;font-style:italic;">${text}…</div>`;
+      box.appendChild(interim);
+    } else {
+      interim.querySelector('.msg-bubble').textContent = text + '…';
+    }
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function clearInterim() {
+    const interim = document.getElementById('transcriptBox').querySelector('.interim-msg');
+    if (interim) interim.remove();
+  }
+
+  /* ── OpenAI API Call ──────────────────────────── */
+  async function getAIResponse(userText) {
+    if (!state.apiKey) { return "Please enter your OpenAI API key at the top of the page to activate the AI."; }
+    state.conversation.push({ role: 'user', content: userText });
+    try {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: state.conversation,
+          max_tokens: 180,
+          temperature: 0.7,
+        })
+      });
+      if (!resp.ok) {
+        const err = await resp.json();
+        const msg = err.error?.message || resp.statusText;
+        if (resp.status === 401) return "Your API key seems invalid. Please check and update it above.";
+        if (resp.status === 429) return "I'm a bit busy right now. Please wait a moment and try again.";
+        return `I'm having trouble connecting. Error: ${msg}`;
+      }
+      const data = await resp.json();
+      const reply = data.choices[0].message.content.trim();
+      state.conversation.push({ role: 'assistant', content: reply });
+      return reply;
+    } catch(e) {
+      console.error(e);
+      return "I'm sorry, I couldn't connect to the AI service. Please check your internet connection.";
+    }
+  }
+
+  /* ── Text-to-Speech ───────────────────────────── */
+  function speak(text, onDone) {
+    if (!state.synthesis) { if(onDone) onDone(); return; }
+    state.synthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    const voices = state.voices;
+    const selIdx = parseInt(voiceSelect.value);
+    if (!isNaN(selIdx) && voices[selIdx]) utter.voice = voices[selIdx];
+    utter.rate  = parseFloat(speedRange.value);
+    utter.pitch = 1.0;
+    utter.volume = 1.0;
+    utter.onend = () => { state.currentUtterance = null; if(onDone) onDone(); };
+    utter.onerror = () => { state.currentUtterance = null; if(onDone) onDone(); };
+    state.currentUtterance = utter;
+    state.synthesis.speak(utter);
+  }
+
+  function stopSpeaking() {
+    state.synthesis.cancel();
+    state.currentUtterance = null;
+    setPhase('idle');
+  }
+
+  /* ── Main Orb / Button Click Handler ─────────── */
+  function handleOrbClick() {
+    if (state.phase === 'listening') {
+      stopListening();
+    } else if (state.phase === 'thinking') {
+      // do nothing while thinking
+    } else {
+      startListening();
+    }
+  }
+
+  /* ── Speech Recognition Flow ─────────────────── */
+  let finalTranscript = '';
+
+  function startListening() {
+    if (!state.apiKey) {
+      document.getElementById('apiKeyInput').focus();
+      showBanner('Please enter and save your OpenAI API key first.');
+      return;
+    }
+    if (state.phase === 'speaking') { stopSpeaking(); return; }
+
+    const rec = setupRecognition();
+    if (!rec) return;
+    state.recognition = rec;
+    finalTranscript = '';
+
+    rec.onstart = () => { setPhase('listening'); };
+
+    rec.onresult = (e) => {
+      let interim = '';
+      finalTranscript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (interim || finalTranscript) addInterimText(finalTranscript || interim);
+    };
+
+    rec.onerror = (e) => {
+      console.error('STT error:', e.error);
+      if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+        showBanner('Microphone access was denied. Please allow microphone in browser settings.');
+      }
+      clearInterim();
+      setPhase('idle');
+    };
+
+    rec.onend = async () => {
+      const said = finalTranscript.trim();
+      clearInterim();
+      if (!said) { setPhase('idle'); return; }
+
+      addMessage('user', said);
+      setPhase('thinking');
+      showTypingIndicator();
+
+      const reply = await getAIResponse(said);
+
+      addMessage('assistant', reply);
+      setPhase('speaking');
+      speak(reply, () => setPhase('idle'));
+    };
+
+    try {
+      rec.start();
+    } catch(e) {
+      console.error(e);
+      setPhase('idle');
+    }
+  }
+
+  function stopListening() {
+    if (state.recognition) {
+      state.recognition.stop();
+      state.recognition = null;
+    }
+  }
+
+  /* ── Clear conversation ──────────────────────── */
+  function clearConversation() {
+    stopSpeaking();
+    if (state.recognition) { state.recognition.stop(); state.recognition = null; }
+    state.conversation = [state.conversation[0]]; // keep system prompt
+    const box = document.getElementById('transcriptBox');
+    box.innerHTML = '';
+    const greeting = "Hello! I'm Medicall, your hospital's AI receptionist. How can I help you today?";
+    state.conversation.push({ role:'assistant', content: greeting });
+    addMessage('assistant', greeting);
+    setPhase('idle');
+  }
+
+  /* ── Init ────────────────────────────────────── */
+  setPhase('idle');
+  // Speak greeting on first load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      if (state.synthesis && state.voices.length === 0) {
+        // Voices not loaded yet, wait
+        speechSynthesis.addEventListener('voiceschanged', () => {
+          loadVoices();
+        });
+      }
+    }, 500);
+  });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+# ── Python ──────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+.env
+.venv/
+venv/
+env/
+
+# ── Database ─────────────────────────────────────────
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ── Node / JS ────────────────────────────────────────
+node_modules/
+.npm/
+
+# ── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Secrets ──────────────────────────────────────────
+.env
+.env.local
+*.key
+secrets.json

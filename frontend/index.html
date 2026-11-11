@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medicall — AI Receptionist for Healthcare</title>
+  <meta name="description" content="Medicall is an AI-powered receptionist for hospitals — answering patient calls 24/7, assisting with appointments, and connecting patients to the right care." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'med-deep':  '#091e36',
+            'med-royal': '#1d68d8',
+            'med-teal':  '#0d9488',
+            'med-cyan':  '#06b6d4',
+            'med-light': '#f0f7ff',
+          },
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+            jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="font-jakarta text-slate-800 bg-[#f6faff] overflow-x-hidden">
+
+  <!-- ═══════════════════════════════════════════════
+       FIXED BACKGROUND LAYERS
+  ═══════════════════════════════════════════════ -->
+  <div class="ambient-bg-glow">
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+  </div>
+  <canvas id="medicalCanvas" aria-hidden="true"></canvas>
+
+  <!-- ═══════════════════════════════════════════════
+       FLOATING ACTION BUTTONS
+  ═══════════════════════════════════════════════ -->
+  <div class="floating-actions-bar" role="complementary" aria-label="Quick contact actions">
+    <button class="fab-call" onclick="window.location.href='voice.html'" title="Call Medicall" aria-label="Call Medicall">
+      <i class="fa-solid fa-phone" aria-hidden="true"></i>
+    </button>
+    <button class="fab-message" id="openMessageModalBtn" onclick="openQuickMessage()" title="Message Us" aria-label="Message Us">
+      <i class="fa-solid fa-comment-dots" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       STICKY HEADER
+  ═══════════════════════════════════════════════ -->
+  <header id="mainHeader" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 md:h-18">
+
+        <!-- Logo -->
+        <a href="#hero" class="flex items-center gap-2.5 flex-shrink-0" aria-label="Medicall Home">
+          <img src="assets/medicall-logo.jpg" alt="Medicall Logo" class="h-9 w-auto rounded-lg object-contain" />
+          <span class="font-outfit font-800 text-xl text-[#091e36] hidden sm:block tracking-tight">Medicall</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <ul class="hidden lg:flex items-center gap-1 text-sm font-medium text-slate-600">
+          <li><a href="#hero"      class="nav-link px-3 py-2 rounded-lg hover:text-[#1d68d8] hover:bg-[#f0f7ff] transition-all">Home</a></li>
+          <li><a href="#about"     class="nav-link px-3 py-2 rounded-lg hover:text-[#1d68d8] hover:bg-[#f0f7ff] transition-all">About</a></li>
+          <li><a href="#how"       class="nav-link px-3 py-2 rounded-lg hover:text-[#1d68d8] hover:bg-[#f0f7ff] transition-all">How It Works</a></li>
+          <li><a href="#features"  class="nav-link px-3 py-2 rounded-lg hover:text-[#1d68d8] hover:bg-[#f0f7ff] transition-all">Features</a></li>
+          <li><a href="#contact"   class="nav-link px-3 py-2 rounded-lg hover:text-[#1d68d8] hover:bg-[#f0f7ff] transition-all">Contact</a></li>
+        </ul>
+
+        <!-- Desktop CTA Buttons -->
+        <div class="hidden lg:flex items-center gap-2">
+          <a href="voice.html" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all">
+            <i class="fa-solid fa-phone text-xs"></i> Call Medicall
+          </a>
+          <button id="navMessageBtn" onclick="openQuickMessage()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-[#1d68d8] bg-[#f0f7ff] hover:bg-[#dbeafe] border border-[#bfdbfe] transition-all">
+            <i class="fa-solid fa-comment-dots text-xs"></i> Message Us
+          </button>
+          <a href="#contact" class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#1d68d8] to-[#0d9488] hover:opacity-90 shadow-md hover:shadow-lg transition-all">
+            Get Started
+          </a>
+        </div>
+
+        <!-- Mobile Action Icons -->
+        <div class="flex lg:hidden items-center gap-2">
+          <a href="voice.html" class="w-9 h-9 flex items-center justify-center rounded-full bg-emerald-500 text-white shadow" aria-label="Call Medicall">
+            <i class="fa-solid fa-phone text-sm"></i>
+          </a>
+          <button id="mobileMessageTrigger" onclick="openQuickMessage()" class="w-9 h-9 flex items-center justify-center rounded-full bg-[#1d68d8] text-white shadow" aria-label="Message Us">
+            <i class="fa-solid fa-comment-dots text-sm"></i>
+          </button>
+          <!-- Hamburger -->
+          <button id="mobileMenuBtn" class="w-9 h-9 flex items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 transition" aria-label="Menu" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Drawer Menu -->
+      <div id="mobileMenu" class="lg:hidden hidden pb-4 border-t border-slate-200/70 mt-1">
+        <ul class="flex flex-col gap-1 pt-3 text-sm font-medium text-slate-600">
+          <li><a href="#hero"     class="mobile-nav-link block px-4 py-2.5 rounded-xl hover:bg-[#f0f7ff] hover:text-[#1d68d8]" onclick="closeMobileMenu()">Home</a></li>
+          <li><a href="#about"    class="mobile-nav-link block px-4 py-2.5 rounded-xl hover:bg-[#f0f7ff] hover:text-[#1d68d8]" onclick="closeMobileMenu()">About</a></li>
+          <li><a href="#how"      class="mobile-nav-link block px-4 py-2.5 rounded-xl hover:bg-[#f0f7ff] hover:text-[#1d68d8]" onclick="closeMobileMenu()">How It Works</a></li>
+          <li><a href="#features" class="mobile-nav-link block px-4 py-2.5 rounded-xl hover:bg-[#f0f7ff] hover:text-[#1d68d8]" onclick="closeMobileMenu()">Features</a></li>
+          <li><a href="#contact"  class="mobile-nav-link block px-4 py-2.5 rounded-xl hover:bg-[#f0f7ff] hover:text-[#1d68d8]" onclick="closeMobileMenu()">Contact</a></li>
+        </ul>
+        <div class="mt-3 px-4">
+          <a href="#contact" onclick="closeMobileMenu()" class="block text-center py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#1d68d8] to-[#0d9488] shadow">Get Started</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════
+       MOBILE 4-FRAME STICKY TAB BAR
+  ═══════════════════════════════════════════════ -->
+  <div class="mobile-frame-bar lg:hidden" role="tablist" aria-label="Page sections">
+    <a href="#frame-1" class="frame-tab active" data-frame="1" role="tab">
+      <i class="fa-solid fa-house text-xs mb-0.5"></i>
+      <span>Overview</span>
+    </a>
+    <a href="#frame-2" class="frame-tab" data-frame="2" role="tab">
+      <i class="fa-solid fa-circle-nodes text-xs mb-0.5"></i>
+      <span>Workflow</span>
+    </a>
+    <a href="#frame-3" class="frame-tab" data-frame="3" role="tab">
+      <i class="fa-solid fa-star text-xs mb-0.5"></i>
+      <span>Features</span>
+    </a>
+    <a href="#frame-4" class="frame-tab" data-frame="4" role="tab">
+      <i class="fa-solid fa-envelope text-xs mb-0.5"></i>
+      <span>Contact</span>
+    </a>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════════ -->
+  <main>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 1 · HERO
+    ──────────────────────────────────────────── -->
+    <section id="hero" class="relative min-h-screen flex items-center pt-24 pb-16 md:pt-28">
+      <div id="frame-1" class="section-anchor"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+          <!-- Hero Text -->
+          <div class="hero-text-col fade-in-up">
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#dbeafe] text-[#1d68d8] text-xs font-semibold mb-6 border border-[#bfdbfe]">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1d68d8] opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-[#1d68d8]"></span>
+              </span>
+              AI Receptionist · Available 24/7
+            </div>
+
+            <h1 class="font-outfit font-extrabold text-4xl sm:text-5xl xl:text-6xl text-[#091e36] leading-tight mb-6">
+              Your Hospital's<br />
+              <span class="bg-gradient-to-r from-[#1d68d8] to-[#0d9488] bg-clip-text text-transparent">AI Receptionist,</span><br />
+              Available 24/7.
+            </h1>
+
+            <p class="text-base sm:text-lg text-slate-500 leading-relaxed mb-8 max-w-xl">
+              Medicall helps hospitals communicate with patients through intelligent AI-powered conversations — answering calls, assisting patients, and connecting them with the right care.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-wrap gap-3 mb-8">
+              <a href="voice.html" class="cta-primary flex items-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-white bg-gradient-to-r from-[#1d68d8] to-[#0d9488] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm">
+                <i class="fa-solid fa-phone-volume"></i>
+                Talk to Medicall
+              </a>
+              <a href="#how" class="cta-secondary flex items-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-[#1d68d8] bg-white border border-[#bfdbfe] shadow hover:shadow-md hover:-translate-y-0.5 transition-all text-sm">
+                <i class="fa-solid fa-play-circle"></i>
+                See How It Works
+              </a>
+              <button id="heroMessageBtn" onclick="openQuickMessage()" class="cta-secondary flex items-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-[#0d9488] bg-white border border-teal-200 shadow hover:shadow-md hover:-translate-y-0.5 transition-all text-sm">
+                <i class="fa-solid fa-comment-dots"></i>
+                Message Us
+              </button>
+            </div>
+
+            <!-- Trust Statement -->
+            <p class="text-xs text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved text-[#0d9488]"></i>
+              Built for better patient communication.
+            </p>
+          </div>
+
+          <!-- Hero Visual -->
+          <div class="hero-visual-col fade-in-up delay-200">
+            <div class="relative flex justify-center items-center">
+
+              <!-- Main Card -->
+              <div class="ai-receptionist-card relative bg-white/90 backdrop-blur-md border border-slate-200/80 rounded-3xl shadow-2xl p-7 max-w-sm w-full mx-auto">
+
+                <!-- Header -->
+                <div class="flex items-center gap-3 mb-5 pb-4 border-b border-slate-100">
+                  <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1d68d8] to-[#0d9488] flex items-center justify-center flex-shrink-0 shadow">
+                    <i class="fa-solid fa-robot text-white text-lg" aria-hidden="true"></i>
+                  </div>
+                  <div>
+                    <p class="font-outfit font-semibold text-[#091e36] text-sm leading-tight">Medicall AI</p>
+                    <p class="text-xs text-emerald-500 font-medium flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+                      Active · Call In Progress
+                    </p>
+                  </div>
+                  <div class="ml-auto">
+                    <span class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full px-2 py-0.5 font-semibold">LIVE</span>
+                  </div>
+                </div>
+
+                <!-- ECG Line -->
+                <div class="ecg-strip mb-5 h-10 overflow-hidden rounded-xl bg-slate-50 flex items-center px-3">
+                  <svg viewBox="0 0 320 40" class="w-full h-8" xmlns="http://www.w3.org/2000/svg">
+                    <polyline class="ecg-line" points="0,20 30,20 40,20 50,5 58,35 66,2 74,28 84,20 120,20 150,20 160,5 168,35 176,2 184,28 194,20 230,20 260,20 270,5 278,35 286,2 294,28 304,20 320,20" fill="none" stroke="url(#ecgGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                      <linearGradient id="ecgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#1d68d8;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+
+                <!-- Patient Conversation -->
+                <div class="space-y-2.5 mb-5">
+                  <div class="flex gap-2.5 items-start">
+                    <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                      <i class="fa-solid fa-user text-slate-400 text-xs"></i>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-sm px-3 py-2 text-xs text-slate-600 max-w-[80%]">
+                      I need to book an appointment with Dr. Ahmed.
+                    </div>
+                  </div>
+                  <div class="flex gap-2.5 items-start flex-row-reverse">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-[#1d68d8] to-[#0d9488] flex items-center justify-center flex-shrink-0">
+                      <i class="fa-solid fa-robot text-white text-xs"></i>
+                    </div>
+                    <div class="bg-gradient-to-br from-[#eff6ff] to-[#f0fdfa] border border-[#bfdbfe] rounded-2xl rounded-tr-sm px-3 py-2 text-xs text-[#1e40af] max-w-[80%]">
+                      Of course! I can help with that. May I have your name and preferred date?
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Voice Waveform -->
+                <div class="waveform-container flex items-center justify-center gap-1 h-8 mb-5">
+                  <span class="wave-bar" style="--h:55%;--d:0s"></span>
+                  <span class="wave-bar" style="--h:80%;--d:0.1s"></span>
+                  <span class="wave-bar" style="--h:40%;--d:0.2s"></span>
+                  <span class="wave-bar" style="--h:90%;--d:0.05s"></span>
+                  <span class="wave-bar" style="--h:60%;--d:0.15s"></span>
+                  <span class="wave-bar" style="--h:75%;--d:0.25s"></span>
+                  <span class="wave-bar" style="--h:50%;--d:0.08s"></span>
+                  <span class="wave-bar" style="--h:85%;--d:0.18s"></span>
+                  <span class="wave-bar" style="--h:35%;--d:0.3s"></span>
+                  <span class="wave-bar" style="--h:70%;--d:0.12s"></span>
+                  <span class="wave-bar" style="--h:95%;--d:0.22s"></span>
+                  <span class="wave-bar" style="--h:45%;--d:0.07s"></span>
+                </div>
+
+                <!-- Info Chips -->
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="flex flex-col items-center gap-1 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <i class="fa-solid fa-calendar-check text-[#1d68d8] text-sm"></i>
+                    <span class="text-[9px] text-slate-500 font-medium text-center leading-tight">Appointments</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <i class="fa-solid fa-heart-pulse text-[#0d9488] text-sm"></i>
+                    <span class="text-[9px] text-slate-500 font-medium text-center leading-tight">Patient Care</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <i class="fa-solid fa-phone-arrow-right text-[#06b6d4] text-sm"></i>
+                    <span class="text-[9px] text-slate-500 font-medium text-center leading-tight">Call Routing</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Floating badge: calls handled -->
+              <div class="absolute -top-4 -right-2 lg:right-4 bg-white border border-emerald-200 rounded-2xl px-3.5 py-2 shadow-lg flex items-center gap-2 fade-in-up delay-400">
+                <i class="fa-solid fa-phone text-emerald-500 text-sm"></i>
+                <div>
+                  <p class="text-[10px] text-slate-500 font-medium">Calls Handled</p>
+                  <p class="font-outfit font-bold text-[#091e36] text-sm">24/7 · Always On</p>
+                </div>
+              </div>
+
+              <!-- Floating badge: cross -->
+              <div class="absolute -bottom-4 -left-2 lg:left-4 bg-white border border-blue-200 rounded-2xl px-3.5 py-2 shadow-lg flex items-center gap-2 fade-in-up delay-500">
+                <i class="fa-solid fa-cross text-[#1d68d8] text-sm"></i>
+                <div>
+                  <p class="text-[10px] text-slate-500 font-medium">Healthcare AI</p>
+                  <p class="font-outfit font-bold text-[#091e36] text-sm">Trusted Receptionist</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 2 · ABOUT
+    ──────────────────────────────────────────── -->
+    <section id="about" class="relative py-20 lg:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div class="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+
+          <!-- Illustration -->
+          <div class="order-2 lg:order-1 fade-in-up">
+            <div class="relative">
+
+              <!-- Flow diagram -->
+              <div class="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-3xl shadow-xl p-8">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-6">How Medicall connects</p>
+
+                <!-- Flow: Patient → Medicall → Hospital -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-0 justify-between">
+                  <!-- Patient -->
+                  <div class="flex flex-col items-center gap-2 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 flex items-center justify-center shadow">
+                      <i class="fa-solid fa-user text-[#1d68d8] text-2xl"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700">Patient</p>
+                    <p class="text-[10px] text-slate-400">Calls the hospital</p>
+                  </div>
+
+                  <!-- Arrow 1 -->
+                  <div class="flow-arrow flex sm:flex-col items-center gap-1 px-2 sm:px-4 text-slate-300">
+                    <div class="flex-1 sm:w-0.5 h-0.5 sm:h-6 bg-gradient-to-r sm:bg-gradient-to-b from-[#1d68d8] to-[#0d9488] rounded-full w-10 sm:flex-none"></div>
+                    <i class="fa-solid fa-chevron-right sm:hidden text-[#0d9488] text-xs"></i>
+                    <i class="fa-solid fa-chevron-down hidden sm:block text-[#0d9488] text-xs"></i>
+                    <div class="flex-1 sm:w-0.5 h-0.5 sm:h-6 bg-gradient-to-r sm:bg-gradient-to-b from-[#0d9488] to-[#1d68d8] rounded-full w-10 sm:flex-none"></div>
+                  </div>
+
+                  <!-- Medicall AI -->
+                  <div class="flex flex-col items-center gap-2 text-center">
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1d68d8] to-[#0d9488] flex items-center justify-center shadow-lg border-4 border-white">
+                      <i class="fa-solid fa-robot text-white text-3xl"></i>
+                    </div>
+                    <p class="text-sm font-bold text-[#091e36] font-outfit">Medicall AI</p>
+                    <p class="text-[10px] text-slate-400">Understands & assists</p>
+                  </div>
+
+                  <!-- Arrow 2 -->
+                  <div class="flow-arrow flex sm:flex-col items-center gap-1 px-2 sm:px-4 text-slate-300">
+                    <div class="flex-1 sm:w-0.5 h-0.5 sm:h-6 bg-gradient-to-r sm:bg-gradient-to-b from-[#1d68d8] to-[#0d9488] rounded-full w-10 sm:flex-none"></div>
+                    <i class="fa-solid fa-chevron-right sm:hidden text-[#0d9488] text-xs"></i>
+                    <i class="fa-solid fa-chevron-down hidden sm:block text-[#0d9488] text-xs"></i>
+                    <div class="flex-1 sm:w-0.5 h-0.5 sm:h-6 bg-gradient-to-r sm:bg-gradient-to-b from-[#0d9488] to-[#1d68d8] rounded-full w-10 sm:flex-none"></div>
+                  </div>
+
+                  <!-- Hospital -->
+                  <div class="flex flex-col items-center gap-2 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 flex items-center justify-center shadow">
+                      <i class="fa-solid fa-hospital text-[#0d9488] text-2xl"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700">Hospital</p>
+                    <p class="text-[10px] text-slate-400">Right care, every time</p>
+                  </div>
+                </div>
+
+                <!-- Stats row -->
+                <div class="mt-8 grid grid-cols-3 gap-3">
+                  <div class="text-center p-3 rounded-xl bg-blue-50 border border-blue-100">
+                    <p class="font-outfit font-bold text-[#1d68d8] text-lg">24/7</p>
+                    <p class="text-[10px] text-slate-500 font-medium">Always Available</p>
+                  </div>
+                  <div class="text-center p-3 rounded-xl bg-teal-50 border border-teal-100">
+                    <p class="font-outfit font-bold text-[#0d9488] text-lg">0</p>
+                    <p class="text-[10px] text-slate-500 font-medium">Missed Calls</p>
+                  </div>
+                  <div class="text-center p-3 rounded-xl bg-blue-50 border border-blue-100">
+                    <p class="font-outfit font-bold text-[#1d68d8] text-lg">Fast</p>
+                    <p class="text-[10px] text-slate-500 font-medium">Response Time</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- About Text -->
+          <div class="order-1 lg:order-2 fade-in-up delay-200">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 text-[#0d9488] text-xs font-semibold mb-5 border border-teal-200">
+              <i class="fa-solid fa-circle-info text-xs"></i>
+              About Medicall
+            </div>
+
+            <h2 class="font-outfit font-extrabold text-3xl sm:text-4xl text-[#091e36] mb-5 leading-tight">
+              A smarter way to connect<br class="hidden sm:block" />
+              <span class="bg-gradient-to-r from-[#1d68d8] to-[#0d9488] bg-clip-text text-transparent">hospitals with patients.</span>
+            </h2>
+
+            <p class="text-slate-500 text-base leading-relaxed mb-4">
+              Medicall is an AI-powered receptionist designed specifically for healthcare. It helps hospitals handle patient calls, answer common questions, assist with appointment-related requests, and make sure patients reach the right place at the right time.
+            </p>
+
+            <p class="text-slate-500 text-base leading-relaxed mb-7">
+              Designed to reduce the communication workload on hospital reception teams, Medicall makes the patient experience faster and more convenient — without replacing the human touch that healthcare demands.
+            </p>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="about-stat p-4 rounded-2xl border border-slate-100 bg-white/60 hover:border-[#bfdbfe] hover:bg-white transition-all">
+                <i class="fa-solid fa-phone-volume text-[#1d68d8] text-xl mb-2"></i>
+                <p class="font-outfit font-semibold text-[#091e36] text-sm">AI-Powered Calls</p>
+                <p class="text-xs text-slate-400 mt-0.5">Natural voice conversations</p>
+              </div>
+              <div class="about-stat p-4 rounded-2xl border border-slate-100 bg-white/60 hover:border-teal-200 hover:bg-white transition-all">
+                <i class="fa-solid fa-hospital text-[#0d9488] text-xl mb-2"></i>
+                <p class="font-outfit font-semibold text-[#091e36] text-sm">Hospital-Ready</p>
+                <p class="text-xs text-slate-400 mt-0.5">Built for healthcare teams</p>
+              </div>
+              <div class="about-stat p-4 rounded-2xl border border-slate-100 bg-white/60 hover:border-[#bfdbfe] hover:bg-white transition-all">
+                <i class="fa-solid fa-clock text-[#1d68d8] text-xl mb-2"></i>
+                <p class="font-outfit font-semibold text-[#091e36] text-sm">24/7 Coverage</p>
+                <p class="text-xs text-slate-400 mt-0.5">No missed calls, ever</p>
+              </div>
+              <div class="about-stat p-4 rounded-2xl border border-slate-100 bg-white/60 hover:border-teal-200 hover:bg-white transition-all">
+                <i class="fa-solid fa-shield-halved text-[#0d9488] text-xl mb-2"></i>
+                <p class="font-outfit font-semibold text-[#091e36] text-sm">Communication Focused</p>
+                <p class="text-xs text-slate-400 mt-0.5">Designed for healthcare</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 3 · HOW IT WORKS
+    ──────────────────────────────────────────── -->
+    <section id="how" class="relative py-20 lg:py-28 bg-gradient-to-b from-white/70 to-transparent">
+      <div id="frame-2" class="section-anchor"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Heading -->
+        <div class="text-center mb-14 fade-in-up">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#dbeafe] text-[#1d68d8] text-xs font-semibold mb-4 border border-[#bfdbfe]">
+            <i class="fa-solid fa-circle-nodes text-xs"></i>
+            How It Works
+          </div>
+          <h2 class="font-outfit font-extrabold text-3xl sm:text-4xl text-[#091e36] mb-3 leading-tight">
+            From patient call to the right care —<br class="hidden sm:block" />
+            <span class="bg-gradient-to-r from-[#1d68d8] to-[#0d9488] bg-clip-text text-transparent">automatically.</span>
+          </h2>
+          <p class="text-slate-500 max-w-xl mx-auto text-base">Four simple steps from the patient picking up the phone to reaching the right care.</p>
+        </div>
+
+        <!-- Steps -->
+        <div class="relative">
+
+          <!-- Desktop connector line -->
+          <div class="hidden lg:block absolute top-[52px] left-[calc(12.5%+28px)] right-[calc(12.5%+28px)] h-0.5 bg-gradient-to-r from-[#1d68d8] via-[#06b6d4] to-[#0d9488] rounded-full opacity-30 z-0"></div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+
+            <!-- Step 1 -->
+            <div class="step-card fade-in-up delay-0">
+              <div class="step-icon-wrap bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+                <i class="fa-solid fa-phone text-[#1d68d8] text-2xl"></i>
+                <span class="step-number">01</span>
+              </div>
+              <h3 class="font-outfit font-bold text-[#091e36] text-lg mt-4 mb-2">Patient Calls</h3>
+              <p class="text-slate-500 text-sm leading-relaxed">A patient calls the hospital — Medicall picks up instantly, every time, day or night.</p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card fade-in-up delay-100">
+              <div class="step-icon-wrap bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200">
+                <i class="fa-solid fa-robot text-[#06b6d4] text-2xl"></i>
+                <span class="step-number">02</span>
+              </div>
+              <h3 class="font-outfit font-bold text-[#091e36] text-lg mt-4 mb-2">Medicall Answers</h3>
+              <p class="text-slate-500 text-sm leading-relaxed">The AI receptionist greets the patient, understands their request, and responds naturally in real time.</p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card fade-in-up delay-200">
+              <div class="step-icon-wrap bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200">
+                <i class="fa-solid fa-headset text-[#0d9488] text-2xl"></i>
+                <span class="step-number">03</span>
+              </div>
+              <h3 class="font-outfit font-bold text-[#091e36] text-lg mt-4 mb-2">Medicall Assists</h3>
+              <p class="text-slate-500 text-sm leading-relaxed">It answers questions, helps with appointments, collects information, and guides the patient through their request.</p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-card fade-in-up delay-300">
+              <div class="step-icon-wrap bg-gradient-to-br from-green-50 to-emerald-100 border border-emerald-200">
+                <i class="fa-solid fa-arrow-right-to-bracket text-emerald-600 text-2xl"></i>
+                <span class="step-number">04</span>
+              </div>
+              <h3 class="font-outfit font-bold text-[#091e36] text-lg mt-4 mb-2">Connect When Needed</h3>
+              <p class="text-slate-500 text-sm leading-relaxed">Complex or important requests are directed to the right hospital team, ensuring no patient is left without care.</p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 4 · FEATURES
+    ──────────────────────────────────────────── -->
+    <section id="features" class="relative py-20 lg:py-28">
+      <div id="frame-3" class="section-anchor"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Heading -->
+        <div class="text-center mb-14 fade-in-up">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 text-[#0d9488] text-xs font-semibold mb-4 border border-teal-200">
+            <i class="fa-solid fa-star text-xs"></i>
+            Features
+          </div>
+          <h2 class="font-outfit font-extrabold text-3xl sm:text-4xl text-[#091e36] mb-3 leading-tight">
+            Everything your reception team needs,<br class="hidden sm:block" />
+            <span class="bg-gradient-to-r from-[#1d68d8] to-[#0d9488] bg-clip-text text-transparent">powered by AI.</span>
+          </h2>
+          <p class="text-slate-500 max-w-xl mx-auto text-base">A complete communication layer for modern healthcare facilities.</p>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
+
+          <div class="feature-card fade-in-up delay-0">
+            <div class="feature-icon bg-gradient-to-br from-[#1d68d8]/10 to-[#1d68d8]/5">
+              <i class="fa-solid fa-clock text-[#1d68d8]"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">24/7 AI Receptionist</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Answer patient calls anytime, including evenings, weekends, and after regular working hours.</p>
+          </div>
+
+          <div class="feature-card fade-in-up delay-75">
+            <div class="feature-icon bg-gradient-to-br from-cyan-100 to-cyan-50">
+              <i class="fa-solid fa-microphone text-[#06b6d4]"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">Natural Conversations</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Patients communicate naturally using voice — no confusing menus or long hold times.</p>
+          </div>
+
+          <div class="feature-card fade-in-up delay-100">
+            <div class="feature-icon bg-gradient-to-br from-teal-100 to-teal-50">
+              <i class="fa-solid fa-calendar-check text-[#0d9488]"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">Appointment Assistance</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Help patients with appointment-related requests — checking availability, scheduling, and more.</p>
+          </div>
+
+          <div class="feature-card fade-in-up delay-150">
+            <div class="feature-icon bg-gradient-to-br from-blue-100 to-blue-50">
+              <i class="fa-solid fa-clipboard-user text-[#1d68d8]"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">Patient Information</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Collect relevant patient information during calls to keep hospital records accurate and up to date.</p>
+          </div>
+
+          <div class="feature-card fade-in-up delay-200">
+            <div class="feature-icon bg-gradient-to-br from-emerald-100 to-emerald-50">
+              <i class="fa-solid fa-route text-emerald-600"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">Smart Call Routing</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Direct patients to the appropriate department or staff member without delay or confusion.</p>
+          </div>
+
+          <div class="feature-card fade-in-up delay-250">
+            <div class="feature-icon bg-gradient-to-br from-yellow-100 to-yellow-50">
+              <i class="fa-solid fa-bolt text-yellow-500"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">Instant Responses</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Give patients immediate answers to common questions — no waiting on hold required.</p>
+          </div>
+
+          <div class="feature-card fade-in-up delay-300">
+            <div class="feature-icon bg-gradient-to-br from-purple-100 to-purple-50">
+              <i class="fa-solid fa-expand text-purple-500"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">Scalable Communication</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Handle multiple patient conversations simultaneously without overwhelming reception staff.</p>
+          </div>
+
+          <div class="feature-card fade-in-up delay-350">
+            <div class="feature-icon bg-gradient-to-br from-rose-100 to-rose-50">
+              <i class="fa-solid fa-handshake text-rose-500"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-[#091e36] text-base mb-2">Human Handoff</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">Transfer important or complex conversations to hospital staff seamlessly and at the right moment.</p>
+          </div>
+
+        </div>
+
+        <!-- Patient Experience -->
+        <div class="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#091e36] to-[#1d3a6e] p-8 lg:p-14 text-white fade-in-up">
+          <!-- Decorative crosses -->
+          <div class="absolute top-6 right-6 text-white/10 text-6xl font-bold select-none">✚</div>
+          <div class="absolute bottom-6 left-8 text-white/5 text-8xl font-bold select-none">✚</div>
+
+          <div class="relative z-10 grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/80 text-xs font-semibold mb-5 border border-white/20">
+                <i class="fa-solid fa-heart-pulse"></i>
+                Patient Experience
+              </div>
+              <h2 class="font-outfit font-extrabold text-3xl sm:text-4xl mb-5 leading-tight">
+                Technology that feels<br />more human.
+              </h2>
+              <p class="text-white/70 text-base leading-relaxed mb-6">
+                Healthcare communication should be simple, accessible, and reassuring. Medicall uses conversational AI to make every patient interaction easier while helping hospital teams focus on what matters most — delivering care.
+              </p>
+              <div class="flex flex-wrap gap-3">
+                <button onclick="openCallModal()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-[#1d68d8] font-semibold text-sm hover:bg-blue-50 transition">
+                  <i class="fa-solid fa-phone-volume"></i>
+                  Experience It Now
+                </button>
+                <button id="bottomMessageBtn" onclick="openQuickMessage()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 text-white border border-white/20 font-semibold text-sm hover:bg-white/20 transition">
+                  <i class="fa-solid fa-comment-dots"></i>
+                  Message Us
+                </button>
+              </div>
+            </div>
+
+            <!-- Phone Visual -->
+            <div class="flex justify-center">
+              <div class="relative">
+                <div class="w-44 h-44 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mx-auto">
+                  <div class="w-32 h-32 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#1d68d8] to-[#0d9488] flex items-center justify-center shadow-2xl">
+                      <i class="fa-solid fa-phone-volume text-white text-3xl"></i>
+                    </div>
+                  </div>
+                </div>
+                <!-- Ping rings -->
+                <div class="absolute inset-0 rounded-full border-2 border-white/10 animate-ping-slow"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 5 · HOSPITAL BENEFITS
+    ──────────────────────────────────────────── -->
+    <section id="benefits" class="relative py-20 lg:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div class="text-center mb-14 fade-in-up">
+          <h2 class="font-outfit font-extrabold text-3xl sm:text-4xl text-[#091e36] mb-3 leading-tight">
+            Built for hospitals.<br />
+            <span class="bg-gradient-to-r from-[#1d68d8] to-[#0d9488] bg-clip-text text-transparent">Designed for patients.</span>
+          </h2>
+          <p class="text-slate-500 max-w-xl mx-auto text-base">Medicall delivers value to both sides of every healthcare interaction.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 fade-in-up delay-200">
+
+          <!-- For Hospitals -->
+          <div class="benefits-card border-l-4 border-[#1d68d8] bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-md hover:shadow-xl transition-all duration-300">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1d68d8]/10 to-[#1d68d8]/5 flex items-center justify-center">
+                <i class="fa-solid fa-hospital text-[#1d68d8] text-xl"></i>
+              </div>
+              <h3 class="font-outfit font-bold text-[#091e36] text-xl">For Hospitals</h3>
+            </div>
+            <ul class="space-y-3">
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#1d68d8]"></i><span>Reduce reception workload significantly</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#1d68d8]"></i><span>Handle calls 24 hours, 7 days a week</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#1d68d8]"></i><span>Improve overall communication efficiency</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#1d68d8]"></i><span>Reduce missed and unanswered calls</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#1d68d8]"></i><span>Streamline and organize patient requests</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#1d68d8]"></i><span>Support staff productivity and focus</span></li>
+            </ul>
+          </div>
+
+          <!-- For Patients -->
+          <div class="benefits-card border-l-4 border-[#0d9488] bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-md hover:shadow-xl transition-all duration-300">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-100 to-teal-50 flex items-center justify-center">
+                <i class="fa-solid fa-user-injured text-[#0d9488] text-xl"></i>
+              </div>
+              <h3 class="font-outfit font-bold text-[#091e36] text-xl">For Patients</h3>
+            </div>
+            <ul class="space-y-3">
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#0d9488]"></i><span>Get quick and accurate answers instantly</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#0d9488]"></i><span>Call the hospital anytime, day or night</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#0d9488]"></i><span>Easier assistance with appointment needs</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#0d9488]"></i><span>Spend less time waiting on hold</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#0d9488]"></i><span>Natural, simple voice interaction</span></li>
+              <li class="benefit-item"><i class="fa-solid fa-check text-[#0d9488]"></i><span>Reach the right department faster</span></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 6 · TRUST
+    ──────────────────────────────────────────── -->
+    <section id="trust" class="relative py-20 lg:py-24 bg-white/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div class="text-center mb-12 fade-in-up">
+          <h2 class="font-outfit font-extrabold text-3xl sm:text-4xl text-[#091e36] mb-3 leading-tight">
+            Reliable communication for<br />
+            <span class="bg-gradient-to-r from-[#1d68d8] to-[#0d9488] bg-clip-text text-transparent">modern healthcare.</span>
+          </h2>
+          <p class="text-slate-500 max-w-xl mx-auto text-base">Designed with healthcare communication in mind.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 fade-in-up delay-200">
+
+          <div class="trust-badge">
+            <i class="fa-solid fa-shield-halved text-[#1d68d8] text-2xl"></i>
+            <p class="text-xs font-semibold text-slate-600 mt-2 text-center">Secure Communication</p>
+          </div>
+          <div class="trust-badge">
+            <i class="fa-solid fa-heart-pulse text-rose-500 text-2xl"></i>
+            <p class="text-xs font-semibold text-slate-600 mt-2 text-center">Patient-Centred</p>
+          </div>
+          <div class="trust-badge">
+            <i class="fa-solid fa-cross text-[#1d68d8] text-2xl"></i>
+            <p class="text-xs font-semibold text-slate-600 mt-2 text-center">Healthcare Design</p>
+          </div>
+          <div class="trust-badge">
+            <i class="fa-solid fa-phone text-[#0d9488] text-2xl"></i>
+            <p class="text-xs font-semibold text-slate-600 mt-2 text-center">Always Reachable</p>
+          </div>
+          <div class="trust-badge">
+            <i class="fa-solid fa-robot text-[#06b6d4] text-2xl"></i>
+            <p class="text-xs font-semibold text-slate-600 mt-2 text-center">Intelligent AI</p>
+          </div>
+          <div class="trust-badge">
+            <i class="fa-solid fa-lock text-emerald-600 text-2xl"></i>
+            <p class="text-xs font-semibold text-slate-600 mt-2 text-center">Trusted Platform</p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 7 · CONTACT / CTA
+    ──────────────────────────────────────────── -->
+    <section id="contact" class="relative py-20 lg:py-28">
+      <div id="frame-4" class="section-anchor"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- CTA Banner -->
+        <div class="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#f0f7ff] to-[#e0f2fe] border border-[#bfdbfe] p-8 lg:p-14 mb-14 text-center fade-in-up">
+          <div class="absolute top-4 right-6 text-[#1d68d8]/10 text-7xl font-bold select-none">✚</div>
+          <div class="relative z-10">
+            <h2 class="font-outfit font-extrabold text-3xl sm:text-4xl text-[#091e36] mb-4 leading-tight">
+              Ready to make patient communication smarter?
+            </h2>
+            <p class="text-slate-500 text-base mb-8 max-w-2xl mx-auto leading-relaxed">
+              Let Medicall become the first voice your patients hear — helping them get the right information and reach the right care.
+            </p>
+            <div class="flex flex-wrap justify-center gap-3">
+              <a href="#contactForm" class="flex items-center gap-2 px-7 py-3.5 rounded-2xl font-semibold text-white bg-gradient-to-r from-[#1d68d8] to-[#0d9488] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm">
+                <i class="fa-solid fa-paper-plane"></i>
+                Get Started
+              </a>
+              <button onclick="openCallModal()" class="flex items-center gap-2 px-7 py-3.5 rounded-2xl font-semibold text-[#1d68d8] bg-white border border-[#bfdbfe] shadow hover:shadow-md hover:-translate-y-0.5 transition-all text-sm">
+                <i class="fa-solid fa-phone"></i>
+                Contact Us
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Form -->
+        <div class="max-w-2xl mx-auto fade-in-up delay-200">
+          <div class="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-3xl shadow-xl p-8 lg:p-10">
+            <h3 class="font-outfit font-bold text-[#091e36] text-2xl mb-1">Talk to Our Team</h3>
+            <p class="text-slate-500 text-sm mb-7">Fill in the form below and we'll be in touch shortly.</p>
+
+            <form id="contactForm" class="space-y-4" onsubmit="submitContactForm(event)">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="form-label" for="cf-name">Your Name</label>
+                  <input type="text" id="cf-name" name="name" class="form-input" placeholder="John Doe" required />
+                </div>
+                <div>
+                  <label class="form-label" for="cf-org">Hospital / Organization</label>
+                  <input type="text" id="cf-org" name="organization" class="form-input" placeholder="City General Hospital" required />
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="form-label" for="cf-email">Email Address</label>
+                  <input type="email" id="cf-email" name="email" class="form-input" placeholder="you@hospital.com" required />
+                </div>
+                <div>
+                  <label class="form-label" for="cf-phone">Phone Number</label>
+                  <input type="tel" id="cf-phone" name="phone" class="form-input" placeholder="+1 234 567 8900" />
+                </div>
+              </div>
+              <div>
+                <label class="form-label" for="cf-message">Message</label>
+                <textarea id="cf-message" name="message" rows="4" class="form-input resize-none" placeholder="Tell us about your hospital's communication needs…" required></textarea>
+              </div>
+              <button type="submit" class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-white bg-gradient-to-r from-[#1d68d8] to-[#0d9488] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm">
+                <i class="fa-solid fa-paper-plane"></i>
+                Talk to Our Team
+              </button>
+            </form>
+
+            <!-- Success State -->
+            <div id="formSuccess" class="hidden text-center py-10">
+              <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-check text-emerald-600 text-2xl"></i>
+              </div>
+              <h4 class="font-outfit font-bold text-[#091e36] text-xl mb-2">Message Sent!</h4>
+              <p class="text-slate-500 text-sm">Thank you for reaching out. Our team will be in touch with you soon.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════ -->
+  <footer class="relative bg-[#091e36] text-white py-14">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
+
+        <!-- Brand -->
+        <div class="lg:col-span-2">
+          <div class="flex items-center gap-2.5 mb-3">
+            <img src="assets/medicall-logo.jpg" alt="Medicall Logo" class="h-9 w-auto rounded-lg object-contain" />
+            <span class="font-outfit font-extrabold text-xl tracking-tight">Medicall</span>
+          </div>
+          <p class="text-white/50 text-sm mb-5 leading-relaxed">AI Receptionist for Healthcare.<br />Helping hospitals communicate better with patients, 24/7.</p>
+          <div class="flex gap-3">
+            <button onclick="openCallModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition">
+              <i class="fa-solid fa-phone"></i> Call Us
+            </button>
+            <button onclick="openQuickMessage()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 border border-white/20 transition">
+              <i class="fa-solid fa-comment-dots"></i> Message
+            </button>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div>
+          <h4 class="font-outfit font-semibold text-white/80 text-sm mb-4 uppercase tracking-widest">Navigation</h4>
+          <ul class="space-y-2 text-sm text-white/50">
+            <li><a href="#hero"     class="hover:text-white transition">Home</a></li>
+            <li><a href="#about"    class="hover:text-white transition">About</a></li>
+            <li><a href="#how"      class="hover:text-white transition">How It Works</a></li>
+            <li><a href="#features" class="hover:text-white transition">Features</a></li>
+            <li><a href="#contact"  class="hover:text-white transition">Contact</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-outfit font-semibold text-white/80 text-sm mb-4 uppercase tracking-widest">Legal</h4>
+          <ul class="space-y-2 text-sm text-white/50">
+            <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+            <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p class="text-white/40 text-xs">© 2026 Medicall. All rights reserved.</p>
+        <p class="text-white/30 text-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-heart-pulse text-rose-400"></i>
+          Designed with healthcare communication in mind.
+        </p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════
+       CALL MODAL
+  ═══════════════════════════════════════════════ -->
+  <div id="callModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="callModalTitle">
+    <div class="modal-content max-w-md">
+
+      <!-- Close -->
+      <button onclick="closeCallModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition z-20" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="text-center mb-6">
+        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#1d68d8] to-[#0d9488] flex items-center justify-center mx-auto mb-4 shadow-xl">
+          <i class="fa-solid fa-phone-volume text-white text-3xl call-ring-anim"></i>
+        </div>
+        <h2 id="callModalTitle" class="font-outfit font-bold text-[#091e36] text-xl mb-1">Talk to Medicall</h2>
+        <p class="text-slate-500 text-sm">Experience a live AI receptionist call simulation.</p>
+      </div>
+
+      <!-- Scenario Select -->
+      <div id="scenarioSelect" class="space-y-3 mb-5">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest">Choose a scenario</p>
+        <button class="scenario-btn w-full" onclick="startCall('appointment')">
+          <i class="fa-solid fa-calendar-check text-[#1d68d8]"></i>
+          <span class="text-left">
+            <strong class="block text-[#091e36] text-sm font-semibold">Appointment Assistance</strong>
+            <small class="text-slate-400">Schedule or check an appointment</small>
+          </span>
+          <i class="fa-solid fa-chevron-right text-slate-300 ml-auto text-xs"></i>
+        </button>
+        <button class="scenario-btn w-full" onclick="startCall('triage')">
+          <i class="fa-solid fa-stethoscope text-[#0d9488]"></i>
+          <span class="text-left">
+            <strong class="block text-[#091e36] text-sm font-semibold">Symptom Inquiry</strong>
+            <small class="text-slate-400">Ask about symptoms or departments</small>
+          </span>
+          <i class="fa-solid fa-chevron-right text-slate-300 ml-auto text-xs"></i>
+        </button>
+        <button class="scenario-btn w-full" onclick="startCall('general')">
+          <i class="fa-solid fa-circle-info text-[#06b6d4]"></i>
+          <span class="text-left">
+            <strong class="block text-[#091e36] text-sm font-semibold">General Inquiry</strong>
+            <small class="text-slate-400">Hospital hours, location, services</small>
+          </span>
+          <i class="fa-solid fa-chevron-right text-slate-300 ml-auto text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Active Call -->
+      <div id="activeCall" class="hidden">
+        <!-- Waveform -->
+        <div class="waveform-container flex items-center justify-center gap-1 h-12 mb-5 bg-slate-50 rounded-2xl">
+          <span class="wave-bar" style="--h:55%;--d:0s"></span>
+          <span class="wave-bar" style="--h:80%;--d:0.1s"></span>
+          <span class="wave-bar" style="--h:40%;--d:0.2s"></span>
+          <span class="wave-bar" style="--h:90%;--d:0.05s"></span>
+          <span class="wave-bar" style="--h:60%;--d:0.15s"></span>
+          <span class="wave-bar" style="--h:75%;--d:0.25s"></span>
+          <span class="wave-bar" style="--h:50%;--d:0.08s"></span>
+          <span class="wave-bar" style="--h:85%;--d:0.18s"></span>
+          <span class="wave-bar" style="--h:35%;--d:0.3s"></span>
+          <span class="wave-bar" style="--h:70%;--d:0.12s"></span>
+        </div>
+
+        <!-- Transcript -->
+        <div id="callTranscript" class="call-transcript"></div>
+
+        <!-- End Call -->
+        <button onclick="endCall()" class="w-full mt-4 py-3 rounded-2xl bg-rose-500 text-white font-semibold text-sm hover:bg-rose-600 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-phone-slash"></i>
+          End Call
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       QUICK MESSAGE MODAL
+  ═══════════════════════════════════════════════ -->
+  <div id="quickMessageModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="msgModalTitle">
+    <div class="modal-content max-w-sm">
+
+      <button onclick="closeQuickMessage()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition z-20" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-[#1d68d8] to-[#0d9488] flex items-center justify-center mx-auto mb-3 shadow-lg">
+          <i class="fa-solid fa-comment-dots text-white text-xl"></i>
+        </div>
+        <h2 id="msgModalTitle" class="font-outfit font-bold text-[#091e36] text-lg mb-1">Quick Message</h2>
+        <p class="text-slate-500 text-xs">We'll get back to you as soon as possible.</p>
+      </div>
+
+      <form id="quickMsgForm" class="space-y-3" onsubmit="submitQuickMsg(event)">
+        <div>
+          <label class="form-label text-xs" for="qm-name">Name</label>
+          <input type="text" id="qm-name" class="form-input text-sm" placeholder="Your name" required />
+        </div>
+        <div>
+          <label class="form-label text-xs" for="qm-email">Email</label>
+          <input type="email" id="qm-email" class="form-input text-sm" placeholder="your@email.com" required />
+        </div>
+        <div>
+          <label class="form-label text-xs" for="qm-msg">Message</label>
+          <textarea id="qm-msg" rows="3" class="form-input text-sm resize-none" placeholder="How can we help?" required></textarea>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-2xl font-semibold text-white bg-gradient-to-r from-[#1d68d8] to-[#0d9488] shadow hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i>
+          Send Message
+        </button>
+      </form>
+
+      <div id="qmSuccess" class="hidden text-center py-6">
+        <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+          <i class="fa-solid fa-check text-emerald-600 text-lg"></i>
+        </div>
+        <p class="font-outfit font-semibold text-[#091e36]">Message sent!</p>
+        <p class="text-slate-500 text-xs mt-1">We'll be in touch soon.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       JAVASCRIPT
+  ═══════════════════════════════════════════════ -->
+  <script src="js/main.js"></script>
+
+</body>
+</html>
