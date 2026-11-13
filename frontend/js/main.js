@@ -227,8 +227,10 @@ function closeMobileMenu() {
 })();
 
 /* ═══════════════════════════════════════════════════════════════
-   6. CALL MODAL
+   6. CALL MODAL  (live API-powered appointment scenario)
 ═══════════════════════════════════════════════════════════════ */
+
+// Fallback static scripts (used when API is offline)
 const callScenarios = {
   appointment: [
     { who: 'patient', text: 'Hi, I need to book an appointment with Dr. Ahmed.' },
@@ -252,18 +254,60 @@ const callScenarios = {
   ]
 };
 
-let callState = { active: false, timerId: null, timeouts: [] };
+let callState = { active: false, timerId: null, timeouts: [], liveDoctors: [] };
+
+// ── Live Appointment Flow ──────────────────────────────────────────────────
+// When API is online, the appointment scenario fetches real doctors + slots.
+let _liveAppointmentScript = null;  // built dynamically from API data
+
+async function buildLiveAppointmentScript() {
+  try {
+    const doctors = await MedicallAPI.getDoctors();
+    if (!doctors || doctors.length === 0) return null;
+
+    callState.liveDoctors = doctors;
+
+    // Pick first doctor as the demo subject
+    const doc = doctors[0];
+    const today = new Date().toISOString().split('T')[0];
+    let slots = [];
+    try {
+      slots = await MedicallAPI.getDoctorSlots(doc.id, today, true);
+    } catch (_) { slots = []; }
+
+    const slotText = slots.length
+      ? slots.slice(0, 2).map(s => s.start_time).join(' and ')
+      : '10:30 AM and 11:00 AM';
+
+    const speciality = doc.specialization || doc.speciality || 'General Medicine';
+
+    return [
+      { who: 'patient', text: `Hi, I need to book an appointment with ${doc.name}.` },
+      { who: 'ai',      text: `Hello! I'd be happy to help. ${doc.name} specialises in ${speciality}. May I have your name?` },
+      { who: 'patient', text: 'My name is Sara.' },
+      { who: 'ai',      text: `Thank you Sara. I'm checking availability for ${doc.name} today…` },
+      { who: 'ai',      text: `${doc.name} has open slots at ${slotText}. Which time works for you?` },
+      { who: 'patient', text: `The first one, please.` },
+      { who: 'ai',      text: `I've reserved that slot for you, Sara. You'll receive a confirmation shortly. Is there anything else I can help you with?` },
+    ];
+  } catch (e) {
+    console.warn('[Medicall] Live appointment script failed, using fallback:', e.message);
+    return null;
+  }
+}
 
 function openCallModal() {
   const modal = document.getElementById('callModal');
   if (!modal) return;
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  // Show scenario selector, hide active call
   const scenSel = document.getElementById('scenarioSelect');
   const activeCall = document.getElementById('activeCall');
   if (scenSel) scenSel.classList.remove('hidden');
   if (activeCall) activeCall.classList.add('hidden');
+
+  // Pre-fetch live appointment script in background
+  buildLiveAppointmentScript().then(script => { _liveAppointmentScript = script; });
 }
 
 function closeCallModal() {
@@ -275,25 +319,26 @@ function closeCallModal() {
 }
 
 function startCall(scenarioKey) {
-  const scenSel  = document.getElementById('scenarioSelect');
-  const active   = document.getElementById('activeCall');
+  const scenSel    = document.getElementById('scenarioSelect');
+  const active     = document.getElementById('activeCall');
   const transcript = document.getElementById('callTranscript');
   if (!active || !transcript) return;
 
-  // Swap views
   if (scenSel) scenSel.classList.add('hidden');
   active.classList.remove('hidden');
 
-  // Clear previous
   transcript.innerHTML = '';
   callState.timeouts.forEach(clearTimeout);
   callState.timeouts = [];
   if (callState.timerId) clearInterval(callState.timerId);
   callState.active = true;
 
-  const msgs = callScenarios[scenarioKey] || callScenarios.appointment;
-  let delay = 600;
+  // Use live API script for appointment scenario if available
+  const msgs = (scenarioKey === 'appointment' && _liveAppointmentScript)
+    ? _liveAppointmentScript
+    : (callScenarios[scenarioKey] || callScenarios.appointment);
 
+  let delay = 600;
   msgs.forEach(msg => {
     const t = setTimeout(() => {
       if (!callState.active) return;
@@ -390,16 +435,118 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   8. CONTACT FORM
+   8. CONTACT FORM  (registers patient lead via API when online)
 ═══════════════════════════════════════════════════════════════ */
-function submitContactForm(e) {
+async function submitContactForm(e) {
   e.preventDefault();
   const btn = e.submitter || e.target.querySelector('[type="submit"]');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending…'; }
+
+  // Collect form values
+  const name  = (document.getElementById('cf-name')    || {}).value || '';
+  const email = (document.getElementById('cf-email')   || {}).value || '';
+  const phone = (document.getElementById('cf-phone')   || {}).value || '';
+  const msg   = (document.getElementById('cf-message') || {}).value || '';
+
+  // Try to register as a patient lead if phone provided
+  if (phone) {
+    try {
+      await MedicallAPI.createPatient({
+        name:  name  || 'Unknown',
+        phone: phone,
+        email: email || null,
+        notes: msg   || null,
+      });
+      console.info('[Medicall] Patient lead registered via API');
+    } catch (err) {
+      console.warn('[Medicall] Patient registration skipped (backend offline):', err.message);
+    }
+  }
+
   setTimeout(() => {
     const form    = document.getElementById('contactForm');
     const success = document.getElementById('formSuccess');
     if (form)    form.classList.add('hidden');
     if (success) success.classList.remove('hidden');
-  }, 1000);
+    if (btn) { btn.disabled = false; }
+  }, 800);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   9. API INTEGRATION — boot sequence
+═══════════════════════════════════════════════════════════════ */
+(function initAPI() {
+  if (typeof MedicallAPI === 'undefined') {
+    console.warn('[Medicall] api.js not loaded — running in offline mode.');
+    return;
+  }
+
+  // ── A. API status indicator (green/grey dot in header) ─────────────────
+  function setApiStatus(online) {
+    const dot = document.getElementById('apiStatusDot');
+    const lbl = document.getElementById('apiStatusLabel');
+    if (!dot) return;
+    if (online) {
+      dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+      if (lbl) lbl.textContent = 'Live';
+    } else {
+      dot.className = 'w-2 h-2 rounded-full bg-slate-300';
+      if (lbl) lbl.textContent = 'Offline';
+    }
+  }
+
+  MedicallAPI.isOnline().then(online => {
+    setApiStatus(online);
+    if (!online) return;
+
+    // ── B. Dashboard stats ──────────────────────────────────────────────
+    MedicallAPI.getDashboard().then(data => {
+      const totalDoctors       = data.total_doctors       ?? data.doctors_count      ?? '—';
+      const totalPatients      = data.total_patients      ?? data.patients_count     ?? '—';
+      const todayAppointments  = data.today_appointments  ?? data.appointments_today ?? '—';
+
+      const el = (id, val) => {
+        const node = document.getElementById(id);
+        if (node) node.textContent = val;
+      };
+      el('stat-doctors',      totalDoctors);
+      el('stat-patients',     totalPatients);
+      el('stat-appointments', todayAppointments);
+    }).catch(() => {});
+
+    // ── C. Doctors live list ────────────────────────────────────────────
+    MedicallAPI.getDoctors().then(doctors => {
+      const grid = document.getElementById('doctorsLiveGrid');
+      if (!grid || !doctors || !doctors.length) return;
+
+      grid.innerHTML = doctors.map(doc => {
+        const initials = doc.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        const spec     = doc.specialization || doc.speciality || 'General';
+        const avail    = doc.is_available !== false ? 'Available' : 'Busy';
+        const dotCls   = doc.is_available !== false ? 'bg-emerald-400' : 'bg-amber-400';
+        return `
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-all">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#1d68d8] to-[#0d9488]
+                        flex items-center justify-center text-white font-outfit font-bold text-sm flex-shrink-0">
+              ${initials}
+            </div>
+            <div class="min-w-0">
+              <p class="font-semibold text-[#091e36] text-sm truncate">${doc.name}</p>
+              <p class="text-xs text-slate-500 truncate">${spec}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span class="w-2 h-2 rounded-full ${dotCls} flex-shrink-0"></span>
+            <span class="text-xs text-slate-500">${avail} today</span>
+          </div>
+        </div>`;
+      }).join('');
+
+      // Show the doctors section
+      const section = document.getElementById('doctorsLiveSection');
+      if (section) section.classList.remove('hidden');
+    }).catch(() => {});
+
+  });
+})();

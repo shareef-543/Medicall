@@ -96,6 +96,11 @@
           <a href="#contact" class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#1d68d8] to-[#0d9488] hover:opacity-90 shadow-md hover:shadow-lg transition-all">
             Get Started
           </a>
+          <!-- API Status Indicator -->
+          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500" title="Backend API status">
+            <span id="apiStatusDot" class="w-2 h-2 rounded-full bg-slate-300"></span>
+            <span id="apiStatusLabel">API</span>
+          </div>
         </div>
 
         <!-- Mobile Action Icons -->
@@ -389,16 +394,16 @@
                 <!-- Stats row -->
                 <div class="mt-8 grid grid-cols-3 gap-3">
                   <div class="text-center p-3 rounded-xl bg-blue-50 border border-blue-100">
-                    <p class="font-outfit font-bold text-[#1d68d8] text-lg">24/7</p>
-                    <p class="text-[10px] text-slate-500 font-medium">Always Available</p>
+                    <p class="font-outfit font-bold text-[#1d68d8] text-lg" id="stat-doctors">5</p>
+                    <p class="text-[10px] text-slate-500 font-medium">Doctors</p>
                   </div>
                   <div class="text-center p-3 rounded-xl bg-teal-50 border border-teal-100">
-                    <p class="font-outfit font-bold text-[#0d9488] text-lg">0</p>
-                    <p class="text-[10px] text-slate-500 font-medium">Missed Calls</p>
+                    <p class="font-outfit font-bold text-[#0d9488] text-lg" id="stat-appointments">—</p>
+                    <p class="text-[10px] text-slate-500 font-medium">Today's Appts</p>
                   </div>
                   <div class="text-center p-3 rounded-xl bg-blue-50 border border-blue-100">
-                    <p class="font-outfit font-bold text-[#1d68d8] text-lg">Fast</p>
-                    <p class="text-[10px] text-slate-500 font-medium">Response Time</p>
+                    <p class="font-outfit font-bold text-[#1d68d8] text-lg" id="stat-patients">7</p>
+                    <p class="text-[10px] text-slate-500 font-medium">Patients</p>
                   </div>
                 </div>
               </div>
@@ -664,6 +669,39 @@
           </div>
         </div>
 
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────
+         SECTION 4b · LIVE DOCTORS (API-powered, hidden until API online)
+    ──────────────────────────────────────────── -->
+    <section id="doctorsLiveSection" class="hidden relative py-14 lg:py-20 bg-gradient-to-b from-white/60 to-transparent">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-10 fade-in-up">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-[#1d68d8] text-xs font-semibold mb-4 border border-blue-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Live from Database
+          </div>
+          <h2 class="font-outfit font-extrabold text-2xl sm:text-3xl text-[#091e36] mb-2">Our Doctors</h2>
+          <p class="text-slate-500 text-sm">Real availability — updated live from the Medicall backend.</p>
+        </div>
+        <div id="doctorsLiveGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"></div>
+
+        <!-- Live summary stats -->
+        <div class="mt-8 flex flex-wrap justify-center gap-6">
+          <div class="flex items-center gap-2 text-sm text-slate-600">
+            <i class="fa-solid fa-user-doctor text-[#1d68d8]"></i>
+            <span><span id="stat-doctors" class="font-semibold text-[#091e36]">—</span> Doctors</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm text-slate-600">
+            <i class="fa-solid fa-users text-[#0d9488]"></i>
+            <span><span id="stat-patients" class="font-semibold text-[#091e36]">—</span> Patients Registered</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm text-slate-600">
+            <i class="fa-solid fa-calendar-day text-[#1d68d8]"></i>
+            <span><span id="stat-appointments" class="font-semibold text-[#091e36]">—</span> Appointments Today</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1039,6 +1077,8 @@
   <!-- ═══════════════════════════════════════════════
        JAVASCRIPT
   ═══════════════════════════════════════════════ -->
+  <!-- API Client — load before main.js -->
+  <script src="js/api.js"></script>
   <script src="js/main.js"></script>
 
 </body>
